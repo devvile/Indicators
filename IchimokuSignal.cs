@@ -136,9 +136,9 @@ namespace NinjaTrader.NinjaScript.Indicators
 				//Disable this property if your indicator requires custom values that cumulate with each new market data event. 
 				//See Help Guide for additional information.
 				IsSuspendedWhileInactive	= true;
-				Conversion					= 9;
-				BBase						= 26;
-				SpanB						= 52;
+				Conversion					= 9; //9
+				BBase						= 26; //26
+				SpanB						= 52; //52
 				Lag							= 26;
 				Isignal_Strong				= true;
 				Isignal_Neutral				= false;
