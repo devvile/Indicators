@@ -29,9 +29,13 @@ namespace NinjaTrader.NinjaScript.Indicators
     {
         double todayGlobexLow = 0;
         double todayGlobexHigh = 0;
-        int globexStartTime = 83000;
+        double yesterdayGlobexLow = 0;
+        double yesterdayGlobexHigh = 0;
+        int globexStartTime = 100;
         double todayRTHLow = 0;
         double todayRTHHigh = 0;
+        double yesterdayRTHLow = 0;
+        double yesterdayRTHHigh = 0;
         int rthStartTime = 153000;
         int rthEndTime = 220000;
 
@@ -52,18 +56,26 @@ namespace NinjaTrader.NinjaScript.Indicators
                 DrawHorizontalGridLines = true;
                 DrawVerticalGridLines = true;
                 PaintPriceMarkers = true;
-                ScaleJustification = NinjaTrader.Gui.Chart.ScaleJustification.Right;
+                ScaleJustification = NinjaTrader.Gui.Chart.ScaleJustification.Left;
                 //Disable this property if your indicator requires custom values that cumulate with each new market data event. 
                 //See Help Guide for additional information.
                 IsSuspendedWhileInactive = true;
                 background = Brushes.DarkSlateGray;
 
-                AddPlot(Brushes.Blue, "globexHigh");     // Defines the plot for Values[0]
-                AddPlot(Brushes.BlueViolet, "globexLow");     // Defines the plot for Values[1]
-                AddPlot(Brushes.Yellow, "rthHigh");   // Defines the plot for Values[2]
-                AddPlot(Brushes.Orange, "rthLow");   // Defines the plot for Values[3]
-                AddPlot(Brushes.LightGray, "ibHigh");   // Defines the plot for Values[4]
-                AddPlot(Brushes.White, "ibLow");   // Defines the plot for Values[5]
+                AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexHigh");     // Defines the plot for Values[0]
+                AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexLow");     // Defines the plot for Values[1
+                AddPlot(new Stroke(Brushes.Blue, 1), PlotStyle.Dot, "yglobexHigh");   // Defines the plot for Values[4]
+                AddPlot(new Stroke(Brushes.Blue, 1), PlotStyle.Dot, "yglobexLow");   // Defines the plot for Values[4]
+
+                AddPlot(new Stroke(Brushes.Yellow, 2), PlotStyle.Line, "rthHigh");   // Defines the plot for Values[2]
+                AddPlot(new Stroke(Brushes.Yellow, 2), PlotStyle.Line, "rthLow");   // Defines the plot for Values[3]
+                AddPlot(new Stroke(Brushes.Yellow, 1), PlotStyle.Dot, "yRTHHigh");   // Defines the plot for Values[4]
+                AddPlot(new Stroke(Brushes.Yellow, 1), PlotStyle.Dot, "yRTHLow");   // Defines the plot for Values[4]
+
+
+                AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibHigh");   // Defines the plot for Values[4]
+                AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibLow");   // Defines the plot for Values[5]
+
             }
             else if (State == State.Configure)
             {
@@ -77,12 +89,17 @@ namespace NinjaTrader.NinjaScript.Indicators
 
             if (ToTime(Time[0]) == globexStartTime)
             {
+                yesterdayGlobexLow = todayGlobexLow;
+                yesterdayGlobexHigh = todayGlobexHigh;
+                yesterdayRTHLow = todayRTHLow;
+                yesterdayRTHHigh = todayRTHHigh;
                 todayGlobexLow = Close[0];
                 todayGlobexHigh = Close[0];
             }
 
             else if (ToTime(Time[0]) == rthStartTime)
             {
+
                 todayRTHLow = Close[0];
                 todayRTHHigh = Close[0];
                 IBLow = Close[0];
@@ -126,18 +143,44 @@ namespace NinjaTrader.NinjaScript.Indicators
 
 
             Draw.TextFixed(this, "NinjaScriptInfo",
-            "Today Globex High: " + todayGlobexHigh.ToString() + "\nToday Globex Low: " + todayGlobexLow.ToString() + "\nIB High: " + IBHigh.ToString() + "\nIB Low: " + IBLow.ToString()
-            + "\nToday RTH High: " + todayRTHHigh.ToString() + "\nToday RTH Low: " + todayRTHLow.ToString(),
+            "Today Globex High: " + todayGlobexHigh.ToString() + "\nToday Globex Low: " + todayGlobexLow.ToString()
+            + "\nIB High: " + IBHigh.ToString() + "\nIB Low: " + IBLow.ToString()
+            + "\nToday RTH High: " + todayRTHHigh.ToString() + "\nToday RTH Low: " + todayRTHLow.ToString()
+            + "\n ~~~~~~~~~~"
+            + "\nYestertday Globex High: " + yesterdayGlobexHigh.ToString() + "\nTodayGlobex Low: " + yesterdayGlobexLow.ToString()
+            + "\nYesterday RTH High: " + yesterdayRTHHigh.ToString() + "\nYesterday RTH Low: " + yesterdayRTHLow.ToString()
+
+            ,
             TextPosition.TopRight,
             ChartControl.Properties.ChartText,
             ChartControl.Properties.LabelFont,
             Brushes.Gray, background, 100);
 
 
+    
 
-       
+                Values[0][0] = todayGlobexHigh;
+                Values[1][0] = todayGlobexLow;
+                Values[2][0] = yesterdayGlobexHigh;
+                Values[3][0] = yesterdayGlobexLow;
+
+                Values[6][0] = yesterdayRTHHigh;
+                Values[7][0] = yesterdayRTHLow;
+
+            if (ToTime(Time[0]) >= rthStartTime && ToTime(Time[0]) <=235900) //time >= rthStartTime && time <= rthEndTime
+            {
+                    Values[4][0] = todayRTHHigh;
+                    Values[5][0] = todayRTHLow;
+                    Values[8][0] = IBHigh;
+                    Values[9][0] = IBLow;
+            }
+    
+           
 
 
+
+
+            /*
             if (todayGlobexHigh > todayRTHHigh && isRTH((ToTime(Time[0]))))
             {
                 Values[0][0] = todayGlobexHigh;
@@ -162,7 +205,7 @@ namespace NinjaTrader.NinjaScript.Indicators
                 Values[3][0] = todayRTHLow;
                 Values[4][0] = IBHigh;
                 Values[5][0] = IBLow;
-            }
+            } */
 
         }
 
