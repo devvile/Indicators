@@ -30,10 +30,12 @@ namespace NinjaTrader.NinjaScript.Indicators
         List<Price> PricesList = new List<Price>();
         double lastLowPrice = 0;
         double lastHighPrice = 0;
+        double highestHigh = 0;
+        double lowestLow = 0;
         double lowerPrice = 0;
-        double higherPrice = 0;
+        double higherPrice = 0;// gathering info if price is rising
         double pullbackThreshold= 20;
-        double minMovement = 40;
+        double minMovement = 60;
 
         Random rnd = new Random();
         protected override void OnStateChange()
@@ -55,8 +57,13 @@ namespace NinjaTrader.NinjaScript.Indicators
                 IsSuspendedWhileInactive = true;
                 background = Brushes.DarkSlateGray;
 
-                AddPlot(Brushes.Yellow, "higherHigh");     // Defines the plot for Values[0]
-                AddPlot(Brushes.Red, "lowerLow");     // Defines the plot for Values[1]
+                AddPlot(new Stroke(Brushes.Blue, 1), PlotStyle.Line, "higherHigh");     // Defines the plot for Values[0]
+                AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "highestHigh");     // Defines the plot for Values[0]
+                AddPlot(new Stroke(Brushes.Red, 1), PlotStyle.Line,  "lowerLow");     // Defines the plot for Values[1]
+                AddPlot(new Stroke(Brushes.Red, 2), PlotStyle.Line,  "lowestLow");     // Defines the plot for Values[1]
+
+                AddPlot(Brushes.Blue, "higherPrice");     // Defines the plot for Values[2]
+                AddPlot(Brushes.Orange, "lowerPrice");     // Defines the plot for Values[3]
             }
             else if (State == State.Configure)
             {
@@ -79,6 +86,8 @@ namespace NinjaTrader.NinjaScript.Indicators
                 lastHighPrice = Close[0];
                 lowerPrice = Close[0];
                 higherPrice = Close[0];
+                lowestLow = Close[0];
+                highestHigh = Close[0];
             }
 
             if (Close[0] > higherPrice)
@@ -92,14 +101,39 @@ namespace NinjaTrader.NinjaScript.Indicators
 
             if (isNewLow(Close[0]))
             {
-                Values[1][0] = lastLowPrice;
-                //        Mark("low");
+                Print("Setting new Low at " + lowerPrice);
+                Print(Time[0]);
+                lastLowPrice = lowerPrice;
+                higherPrice = lowerPrice; // reseting higherPrice to start from new low level;
+                if (lowestLow == 0 || lowestLow > lastLowPrice)
+                {
+                    lowestLow= lastLowPrice;
+                };
             }
-                 else  if (isNewHigh(Close[0]))
+            else if (isNewHigh(Close[0]))
             {
-                Values[0][0] = lastHighPrice;
-                //          Mark("high");
+                Print("Setting new High at " + higherPrice);
+                Print(Time[0]);
+
+                lastHighPrice = higherPrice;
+                lowerPrice = higherPrice; //reset
+
+                if (highestHigh == 0 || highestHigh < lastHighPrice)
+                {
+                    highestHigh = lastHighPrice;
+                };
+
             }
+
+
+            Values[0][0] = lastHighPrice;
+            Values[1][0] = highestHigh;
+            Values[2][0] = lastLowPrice;
+            Values[3][0] = lowestLow;
+
+
+
+
 
 
             // cena 
@@ -120,13 +154,9 @@ namespace NinjaTrader.NinjaScript.Indicators
         {
            // Print(price);
             double pullbackInHandles = higherPrice - price;
-            double forwardMovement = price - lastLowPrice;
+            double forwardMovement = price - lowerPrice;
             if (forwardMovement >= minMovement * TickSize && (pullbackInHandles) / (forwardMovement) * 100 >= pullbackThreshold) // dlugosc pullbacka stanowi x procent calego wzrostu
             {
-                Print(forwardMovement);
-                Print("Setting new High at " + higherPrice);
-                Print(Time[0]);
-                lastHighPrice = price;
                 return true;
             }
             else
@@ -139,13 +169,9 @@ namespace NinjaTrader.NinjaScript.Indicators
         {
             // Print(price);
             double pullbackInHandles = price - lowerPrice;
-            double forwardMovement = lastHighPrice - price;
+            double forwardMovement = higherPrice - price;
             if (forwardMovement >= minMovement * TickSize && (pullbackInHandles) / (forwardMovement) * 100 >= pullbackThreshold) // dlugosc pullbacka stanowi x procent calego wzrostu
             {
-                Print(forwardMovement);
-                Print("Setting new Low at " + lowerPrice);
-                Print(Time[0]);
-                lastHighPrice = price;
                 return true;
             }
             else

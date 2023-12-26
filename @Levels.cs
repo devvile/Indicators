@@ -38,6 +38,8 @@ namespace NinjaTrader.NinjaScript.Indicators
         double yesterdayRTHHigh = 0;
         int rthStartTime = 153000;
         int rthEndTime = 220000;
+        double lastWeekHigh = 0;
+        double lastWeekLow = 0;
 
         double IBLow = 0;
         double IBHigh = 0;
@@ -56,38 +58,49 @@ namespace NinjaTrader.NinjaScript.Indicators
                 DrawHorizontalGridLines = true;
                 DrawVerticalGridLines = true;
                 PaintPriceMarkers = true;
-                ScaleJustification = NinjaTrader.Gui.Chart.ScaleJustification.Left;
+                ScaleJustification = NinjaTrader.Gui.Chart.ScaleJustification.Right;
                 //Disable this property if your indicator requires custom values that cumulate with each new market data event. 
                 //See Help Guide for additional information.
                 IsSuspendedWhileInactive = true;
-                background = Brushes.DarkSlateGray;
-
-                AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexHigh");     // Defines the plot for Values[0]
-                AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexLow");     // Defines the plot for Values[1
-                AddPlot(new Stroke(Brushes.Blue, 1), PlotStyle.Dot, "yglobexHigh");   // Defines the plot for Values[4]
-                AddPlot(new Stroke(Brushes.Blue, 1), PlotStyle.Dot, "yglobexLow");   // Defines the plot for Values[4]
-
-                AddPlot(new Stroke(Brushes.Yellow, 2), PlotStyle.Line, "rthHigh");   // Defines the plot for Values[2]
-                AddPlot(new Stroke(Brushes.Yellow, 2), PlotStyle.Line, "rthLow");   // Defines the plot for Values[3]
-                AddPlot(new Stroke(Brushes.Yellow, 1), PlotStyle.Dot, "yRTHHigh");   // Defines the plot for Values[4]
-                AddPlot(new Stroke(Brushes.Yellow, 1), PlotStyle.Dot, "yRTHLow");   // Defines the plot for Values[4]
 
 
-                AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibHigh");   // Defines the plot for Values[4]
-                AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibLow");   // Defines the plot for Values[5]
+                AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexHigh");     
+                AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexLow");     
+                AddPlot(new Stroke(Brushes.Blue, 1), PlotStyle.Dot, "yglobexHigh");   
+                AddPlot(new Stroke(Brushes.Blue, 1), PlotStyle.Dot, "yglobexLow");   
+                AddPlot(new Stroke(Brushes.Yellow, 2), PlotStyle.Line, "rthHigh");   
+                AddPlot(new Stroke(Brushes.Yellow, 2), PlotStyle.Line, "rthLow"); 
+                AddPlot(new Stroke(Brushes.Yellow, 1), PlotStyle.Dot, "yRTHHigh");   
+                AddPlot(new Stroke(Brushes.Yellow, 1), PlotStyle.Dot, "yRTHLow");   
+
+
+                AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibHigh");  
+                AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibLow");  
+
+                AddPlot(new Stroke(Brushes.Red, 2), PlotStyle.Line, "lwHigh");  
+                AddPlot(new Stroke(Brushes.Red, 2), PlotStyle.Line, "lwLow");   
 
             }
             else if (State == State.Configure)
             {
+                background = Brushes.DarkSlateGray;
+                AddDataSeries(BarsPeriodType.Minute, 1);
+                AddDataSeries(BarsPeriodType.Week, 1);
+            }else if(State == State.DataLoaded)
+            {
+                ClearOutputWindow();
             }
         }
         protected override void OnBarUpdate()
         {
 
-            if (CurrentBar < 0)
+            if (CurrentBars[0] < BarsRequiredToPlot || CurrentBars[1] < BarsRequiredToPlot || CurrentBars[2] < 1)
                 return;
-
-            if (ToTime(Time[0]) == globexStartTime)
+            if (BarsInProgress == 1)
+            {
+                Print("Progresss 1");
+                Print(Time[0]);
+                if (ToTime(Time[0]) == globexStartTime)
             {
                 yesterdayGlobexLow = todayGlobexLow;
                 yesterdayGlobexHigh = todayGlobexHigh;
@@ -106,38 +119,40 @@ namespace NinjaTrader.NinjaScript.Indicators
                 IBHigh = Close[0];
             }
 
-            if (isGlobex(ToTime(Time[0]))){
-                if (Close[0] > todayGlobexHigh)
+            if (isGlobex(ToTime(Time[0])))
+            {
+                if (High[0] > todayGlobexHigh)
                 {
-                    todayGlobexHigh = Close[0];
-                }else if(Close[0] < todayGlobexLow)
+                    todayGlobexHigh = High[0];
+                }
+                else if (Low[0] < todayGlobexLow)
                 {
-                    todayGlobexLow = Close[0];
+                    todayGlobexLow = Low[0];
                 }
             }
 
             if (isRTH(ToTime(Time[0])))
             {
-                if (Close[0] > todayRTHHigh)
+                if (High[0] > todayRTHHigh)
                 {
-                    todayRTHHigh = Close[0];
+                    todayRTHHigh = High[0];
                 }
-                else if (Close[0] < todayRTHLow)
+                else if (Low[0] < todayRTHLow)
                 {
-                    todayRTHLow = Close[0];
+                    todayRTHLow = Low[0];
                 }
             }
 
 
             if (isIB(ToTime(Time[0])))
             {
-                if (Close[0] > IBHigh)
+                if (High[0] > IBHigh)
                 {
-                    IBHigh = Close[0];
+                    IBHigh = High[0];
                 }
-                else if (Close[0] < IBLow)
+                else if (Low[0] < IBLow)
                 {
-                    IBLow  = Close[0];
+                    IBLow = Low[0];
                 }
             }
 
@@ -151,67 +166,76 @@ namespace NinjaTrader.NinjaScript.Indicators
             + "\nYesterday RTH High: " + yesterdayRTHHigh.ToString() + "\nYesterday RTH Low: " + yesterdayRTHLow.ToString()
 
             ,
-            TextPosition.TopRight,
+            TextPosition.TopLeft,
             ChartControl.Properties.ChartText,
             ChartControl.Properties.LabelFont,
             Brushes.Gray, background, 100);
 
 
-    
 
-                Values[0][0] = todayGlobexHigh;
-                Values[1][0] = todayGlobexLow;
-                Values[2][0] = yesterdayGlobexHigh;
-                Values[3][0] = yesterdayGlobexLow;
 
-                Values[6][0] = yesterdayRTHHigh;
-                Values[7][0] = yesterdayRTHLow;
+            Values[0][0] = todayGlobexHigh;
+            Values[1][0] = todayGlobexLow;
+            Values[2][0] = yesterdayGlobexHigh;
+            Values[3][0] = yesterdayGlobexLow;
 
-            if (ToTime(Time[0]) >= rthStartTime && ToTime(Time[0]) <=235900) //time >= rthStartTime && time <= rthEndTime
+            Values[6][0] = yesterdayRTHHigh;
+            Values[7][0] = yesterdayRTHLow;
+            Values[10][0] = lastWeekHigh;
+            Values[11][0] = lastWeekLow;
+
+            if (ToTime(Time[0]) >= rthStartTime && ToTime(Time[0]) <= 235900) //time >= rthStartTime && time <= rthEndTime
             {
-                    Values[4][0] = todayRTHHigh;
-                    Values[5][0] = todayRTHLow;
-                    Values[8][0] = IBHigh;
-                    Values[9][0] = IBLow;
+                Values[4][0] = todayRTHHigh;
+                Values[5][0] = todayRTHLow;
+                Values[8][0] = IBHigh;
+                Values[9][0] = IBLow;
             }
-    
-           
-
-
-
-
-            /*
-            if (todayGlobexHigh > todayRTHHigh && isRTH((ToTime(Time[0]))))
-            {
-                Values[0][0] = todayGlobexHigh;
-            }else if (isGlobex((ToTime(Time[0]))))
-            {
-                Values[0][0] = todayGlobexHigh;
-            }
-
-            if (todayGlobexLow < todayRTHLow && isRTH((ToTime(Time[0]))))
-            {
-                Values[1][0] = todayGlobexLow;
-            }
-            else if (isGlobex((ToTime(Time[0]))))
-            {
-                Values[1][0] = todayGlobexLow;
-            }
-
-
-            if (isRTH((ToTime(Time[0]))))
-            {
-                Values[2][0] = todayRTHHigh;
-                Values[3][0] = todayRTHLow;
-                Values[4][0] = IBHigh;
-                Values[5][0] = IBLow;
-            } */
-
         }
+            if (BarsInProgress == 2) //16
+            {
+                Print("Progresss 2");
+                Print(Time[0]);
+                lastWeekHigh = Highs[2][0];
+                lastWeekLow  = Lows[2][0];
+            }
+
+
+
+
+                /*
+                if (todayGlobexHigh > todayRTHHigh && isRTH((ToTime(Time[0]))))
+                {
+                    Values[0][0] = todayGlobexHigh;
+                }else if (isGlobex((ToTime(Time[0]))))
+                {
+                    Values[0][0] = todayGlobexHigh;
+                }
+
+                if (todayGlobexLow < todayRTHLow && isRTH((ToTime(Time[0]))))
+                {
+                    Values[1][0] = todayGlobexLow;
+                }
+                else if (isGlobex((ToTime(Time[0]))))
+                {
+                    Values[1][0] = todayGlobexLow;
+                }
+
+
+                if (isRTH((ToTime(Time[0]))))
+                {
+                    Values[2][0] = todayRTHHigh;
+                    Values[3][0] = todayRTHLow;
+                    Values[4][0] = IBHigh;
+                    Values[5][0] = IBLow;
+                } */
+
+            }
 
         private bool isGlobex(int time)
         {
-        if(time >= globexStartTime && time <= rthStartTime){
+            if (time >= globexStartTime && time <= rthStartTime)
+            {
                 return true;
             }
             else
@@ -222,13 +246,14 @@ namespace NinjaTrader.NinjaScript.Indicators
 
         private bool isRTH(int time)
         {
-          if (time >= rthStartTime && time <= rthEndTime)
-            { 
-            return true;
-          }else
-          {
+            if (time >= rthStartTime && time <= rthEndTime)
+            {
+                return true;
+            }
+            else
+            {
                 return false;
-          }
+            }
         }
 
 
