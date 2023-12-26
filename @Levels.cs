@@ -40,6 +40,8 @@ namespace NinjaTrader.NinjaScript.Indicators
         int rthEndTime = 220000;
         double lastWeekHigh = 0;
         double lastWeekLow = 0;
+        double thisWeekHigh = 0;
+        double thisWeekLow = 0;
 
         double IBLow = 0;
         double IBHigh = 0;
@@ -77,8 +79,10 @@ namespace NinjaTrader.NinjaScript.Indicators
                 AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibHigh");  
                 AddPlot(new Stroke(Brushes.White, 2), PlotStyle.Line, "ibLow");  
 
-                AddPlot(new Stroke(Brushes.Red, 2), PlotStyle.Line, "lwHigh");  
-                AddPlot(new Stroke(Brushes.Red, 2), PlotStyle.Line, "lwLow");   
+                AddPlot(new Stroke(Brushes.Red, 1), PlotStyle.Dot, "lwHigh");  
+                AddPlot(new Stroke(Brushes.Red, 1), PlotStyle.Dot, "lwLow");
+                AddPlot(new Stroke(Brushes.Red, 2), PlotStyle.Line, "twHigh");
+                AddPlot(new Stroke(Brushes.Red, 2), PlotStyle.Line, "twLow");
 
             }
             else if (State == State.Configure)
@@ -94,29 +98,53 @@ namespace NinjaTrader.NinjaScript.Indicators
         protected override void OnBarUpdate()
         {
 
-            if (CurrentBars[0] < BarsRequiredToPlot || CurrentBars[1] < BarsRequiredToPlot || CurrentBars[2] < 1)
+            if (CurrentBars[0] < BarsRequiredToPlot || CurrentBars[1] < BarsRequiredToPlot)
                 return;
+
+            if (Bars.IsFirstBarOfSession && BarsInProgress == 1)
+            {
+                if (thisWeekHigh == 0)
+                {
+                    thisWeekHigh = High[0];
+                }
+                if (thisWeekLow == 0)
+                {
+                    thisWeekLow = Low[0];
+                }
+
+            }
+
             if (BarsInProgress == 1)
             {
                 Print("Progresss 1");
                 Print(Time[0]);
+                if (High[0]> thisWeekHigh)
+                {
+                    thisWeekHigh = High[0];
+                };
+
+                if (Low[0] < thisWeekLow)
+                {
+                    thisWeekLow = Low[0];
+                };
+
                 if (ToTime(Time[0]) == globexStartTime)
             {
                 yesterdayGlobexLow = todayGlobexLow;
                 yesterdayGlobexHigh = todayGlobexHigh;
                 yesterdayRTHLow = todayRTHLow;
                 yesterdayRTHHigh = todayRTHHigh;
-                todayGlobexLow = Close[0];
-                todayGlobexHigh = Close[0];
+                todayGlobexLow = Low[0];
+                todayGlobexHigh = High[0];
             }
 
             else if (ToTime(Time[0]) == rthStartTime)
             {
 
-                todayRTHLow = Close[0];
-                todayRTHHigh = Close[0];
-                IBLow = Close[0];
-                IBHigh = Close[0];
+                todayRTHLow = Low[0];
+                todayRTHHigh = High[0];
+                IBLow = Low[0];
+                IBHigh = High[0];
             }
 
             if (isGlobex(ToTime(Time[0])))
@@ -176,13 +204,31 @@ namespace NinjaTrader.NinjaScript.Indicators
 
             Values[0][0] = todayGlobexHigh;
             Values[1][0] = todayGlobexLow;
-            Values[2][0] = yesterdayGlobexHigh;
-            Values[3][0] = yesterdayGlobexLow;
 
-            Values[6][0] = yesterdayRTHHigh;
-            Values[7][0] = yesterdayRTHLow;
-            Values[10][0] = lastWeekHigh;
-            Values[11][0] = lastWeekLow;
+            if (yesterdayGlobexHigh != 0 && yesterdayGlobexLow !=0)
+             {
+                    Values[2][0] = yesterdayGlobexHigh;
+                    Values[3][0] = yesterdayGlobexLow;
+             }
+
+
+            if (yesterdayRTHHigh != 0 && yesterdayRTHLow != 0)
+             {
+                    Values[6][0] = yesterdayRTHHigh;
+                    Values[7][0] = yesterdayRTHLow;
+             }
+                if (thisWeekHigh!= 0 && thisWeekLow !=0)
+                {
+                    Values[12][0] = thisWeekHigh;
+                    Values[13][0] = thisWeekLow;
+                }
+
+
+            if (CurrentBars[2] > 1 && lastWeekHigh!= 0 && lastWeekLow != 0 )
+                {
+                  Values[10][0] = lastWeekHigh;
+                  Values[11][0] = lastWeekLow;
+            }
 
             if (ToTime(Time[0]) >= rthStartTime && ToTime(Time[0]) <= 235900) //time >= rthStartTime && time <= rthEndTime
             {
@@ -192,43 +238,16 @@ namespace NinjaTrader.NinjaScript.Indicators
                 Values[9][0] = IBLow;
             }
         }
-            if (BarsInProgress == 2) //16
+            if (BarsInProgress == 2 && CurrentBars[2]>=1) //16
             {
                 Print("Progresss 2");
                 Print(Time[0]);
                 lastWeekHigh = Highs[2][0];
                 lastWeekLow  = Lows[2][0];
+                thisWeekHigh = Closes[2][0];
+                thisWeekLow = Closes[2][0];
             }
 
-
-
-
-                /*
-                if (todayGlobexHigh > todayRTHHigh && isRTH((ToTime(Time[0]))))
-                {
-                    Values[0][0] = todayGlobexHigh;
-                }else if (isGlobex((ToTime(Time[0]))))
-                {
-                    Values[0][0] = todayGlobexHigh;
-                }
-
-                if (todayGlobexLow < todayRTHLow && isRTH((ToTime(Time[0]))))
-                {
-                    Values[1][0] = todayGlobexLow;
-                }
-                else if (isGlobex((ToTime(Time[0]))))
-                {
-                    Values[1][0] = todayGlobexLow;
-                }
-
-
-                if (isRTH((ToTime(Time[0]))))
-                {
-                    Values[2][0] = todayRTHHigh;
-                    Values[3][0] = todayRTHLow;
-                    Values[4][0] = IBHigh;
-                    Values[5][0] = IBLow;
-                } */
 
             }
 
