@@ -301,6 +301,92 @@ namespace NinjaTrader.NinjaScript.Indicators
             get { return Serialize.BrushToString(background); }
             set { background = Serialize.StringToBrush(value); }
         }
+
+        /*
+         * 
+            Values[0][0] = todayGlobexHigh;
+            Values[1][0] = todayGlobexLow;
+            Values[2][0] = yesterdayGlobexHigh;
+            Values[3][0] = yesterdayGlobexLow;
+            Values[4][0] = todayRTHHigh;
+            Values[5][0] = todayRTHLow;
+            Values[6][0] = yesterdayRTHHigh;
+            Values[7][0] = yesterdayRTHLow;
+            Values[8][0] = IBHigh;
+            Values[9][0] = IBLow;
+
+        */
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> todayGlobexHighs
+        {
+            get { return Values[0]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> todayGlobexLows
+        {
+            get { return Values[1]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> yesterdayGlobexHighs
+        {
+            get { return Values[2]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> yesterdayGlobexLows
+        {
+            get { return Values[3]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> todayRTHHighs
+        {
+            get { return Values[4]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> todayRTHLows
+        {
+            get { return Values[5]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> yesterdayRTHHighs
+        {
+            get { return Values[6]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> yesterdayRTHLows
+        {
+            get { return Values[7]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> IBHighs
+        {
+            get { return Values[8]; }
+        }
+
+        [Browsable(false)]
+        [XmlIgnore]
+        public Series<double> IBLows
+        {
+            get { return Values[9]; }
+        }
+
         #endregion
     }
 }
