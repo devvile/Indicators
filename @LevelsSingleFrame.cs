@@ -25,7 +25,7 @@ using NinjaTrader.NinjaScript.Indicators;
 //This namespace holds Indicators in this folder and is required. Do not change it. 
 namespace NinjaTrader.NinjaScript.Indicators
 {
-    public class Levels : Indicator
+    public class LevelsSingleFrame: Indicator
     {
         double todayGlobexLow = 0;
         double todayGlobexHigh = 0;
@@ -52,7 +52,7 @@ namespace NinjaTrader.NinjaScript.Indicators
             if (State == State.SetDefaults)
             {
                 Description = @"Displays globex high, globex low, IB high, IB low, RTH high, RTH low";
-                Name = "Levels";
+                Name = "Levels Single Timeframe";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -385,19 +385,19 @@ namespace NinjaTrader.NinjaScript.Indicators
 {
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
-		private Levels[] cacheLevels;
-		public Levels Levels()
+		private LevelsSingleFrame[] cacheLevelsSingleFrame;
+		public LevelsSingleFrame LevelsSingleFrame()
 		{
-			return Levels(Input);
+			return LevelsSingleFrame(Input);
 		}
 
-		public Levels Levels(ISeries<double> input)
+		public LevelsSingleFrame LevelsSingleFrame(ISeries<double> input)
 		{
-			if (cacheLevels != null)
-				for (int idx = 0; idx < cacheLevels.Length; idx++)
-					if (cacheLevels[idx] != null &&  cacheLevels[idx].EqualsInput(input))
-						return cacheLevels[idx];
-			return CacheIndicator<Levels>(new Levels(), input, ref cacheLevels);
+			if (cacheLevelsSingleFrame != null)
+				for (int idx = 0; idx < cacheLevelsSingleFrame.Length; idx++)
+					if (cacheLevelsSingleFrame[idx] != null &&  cacheLevelsSingleFrame[idx].EqualsInput(input))
+						return cacheLevelsSingleFrame[idx];
+			return CacheIndicator<LevelsSingleFrame>(new LevelsSingleFrame(), input, ref cacheLevelsSingleFrame);
 		}
 	}
 }
@@ -406,14 +406,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.Levels Levels()
+		public Indicators.LevelsSingleFrame LevelsSingleFrame()
 		{
-			return indicator.Levels(Input);
+			return indicator.LevelsSingleFrame(Input);
 		}
 
-		public Indicators.Levels Levels(ISeries<double> input )
+		public Indicators.LevelsSingleFrame LevelsSingleFrame(ISeries<double> input )
 		{
-			return indicator.Levels(input);
+			return indicator.LevelsSingleFrame(input);
 		}
 	}
 }
@@ -422,14 +422,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.Levels Levels()
+		public Indicators.LevelsSingleFrame LevelsSingleFrame()
 		{
-			return indicator.Levels(Input);
+			return indicator.LevelsSingleFrame(Input);
 		}
 
-		public Indicators.Levels Levels(ISeries<double> input )
+		public Indicators.LevelsSingleFrame LevelsSingleFrame(ISeries<double> input )
 		{
-			return indicator.Levels(input);
+			return indicator.LevelsSingleFrame(input);
 		}
 	}
 }

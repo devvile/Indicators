@@ -25,7 +25,7 @@ using NinjaTrader.NinjaScript.Indicators;
 //This namespace holds Indicators in this folder and is required. Do not change it. 
 namespace NinjaTrader.NinjaScript.Indicators
 {
-    public class Levels : Indicator
+    public class Levels4Apollo : Indicator
     {
         double todayGlobexLow = 0;
         double todayGlobexHigh = 0;
@@ -42,7 +42,7 @@ namespace NinjaTrader.NinjaScript.Indicators
         double lastWeekLow = 0;
         double thisWeekHigh = 0;
         double thisWeekLow = 0;
-
+        private Series<double> minuteSeries;
         double IBLow = 0;
         double IBHigh = 0;
         int IbEndTime = 163000;
@@ -52,7 +52,7 @@ namespace NinjaTrader.NinjaScript.Indicators
             if (State == State.SetDefaults)
             {
                 Description = @"Displays globex high, globex low, IB high, IB low, RTH high, RTH low";
-                Name = "Levels";
+                Name = "Levels4Apollo";
                 Calculate = Calculate.OnEachTick;
                 IsOverlay = true;
                 DisplayInDataBox = true;
@@ -89,28 +89,34 @@ namespace NinjaTrader.NinjaScript.Indicators
             else if (State == State.Configure)
             {
                 background = Brushes.DarkSlateGray;
+
                 AddDataSeries(BarsPeriodType.Minute, 1);
-                AddDataSeries(BarsPeriodType.Week, 1);
+                AddDataSeries(BarsPeriodType.Minute, 4);
+                AddDataSeries(BarsPeriodType.Minute, 16);
+                AddDataSeries(BarsPeriodType.Day, 1);
+                AddDataSeries(BarsPeriodType.Week, 1); //BarsInProgress[5]
+
             }else if(State == State.DataLoaded)
             {
                 ClearOutputWindow();
+                minuteSeries = new Series<double>(BarsArray[1]);
             }
         }
         protected override void OnBarUpdate()
         {
 
-            if (CurrentBars[0] < BarsRequiredToPlot || CurrentBars[1] < BarsRequiredToPlot)
+            if (CurrentBars[0] < BarsRequiredToPlot || CurrentBars[1] < BarsRequiredToPlot || CurrentBars[2] < BarsRequiredToPlot || CurrentBars[3] < BarsRequiredToPlot || CurrentBars[4] < 10 || CurrentBars[5] < 1)
                 return;
 
             if (Bars.IsFirstBarOfSession && BarsInProgress == 1)
             {
                 if (thisWeekHigh == 0)
                 {
-                    thisWeekHigh = High[0];
+                    thisWeekHigh = Highs[1][0];
                 }
                 if (thisWeekLow == 0)
                 {
-                    thisWeekLow = Low[0];
+                    thisWeekLow = Lows[1][0];
                 }
 
             }
@@ -120,134 +126,133 @@ namespace NinjaTrader.NinjaScript.Indicators
 
                 if (High[0]> thisWeekHigh)
                 {
-                    thisWeekHigh = High[0];
+                    thisWeekHigh = Highs[1][0];
                 };
 
                 if (Low[0] < thisWeekLow)
                 {
-                    thisWeekLow = Low[0];
+                    thisWeekLow = Lows[1][0];
                 };
 
                 if (ToTime(Time[0]) == globexStartTime)
-            {
-                yesterdayGlobexLow = todayGlobexLow;
-                yesterdayGlobexHigh = todayGlobexHigh;
-                yesterdayRTHLow = todayRTHLow;
-                yesterdayRTHHigh = todayRTHHigh;
-                todayGlobexLow = Low[0];
-                todayGlobexHigh = High[0];
-            }
-
-            else if (ToTime(Time[0]) == rthStartTime)
-            {
-
-                todayRTHLow = Low[0];
-                todayRTHHigh = High[0];
-                IBLow = Low[0];
-                IBHigh = High[0];
-            }
-
-            if (isGlobex(ToTime(Time[0])))
-            {
-                if (High[0] > todayGlobexHigh)
-                {
-                    todayGlobexHigh = High[0];
-                }
-                else if (Low[0] < todayGlobexLow)
-                {
+                 {
+                    yesterdayGlobexLow = todayGlobexLow;
+                    yesterdayGlobexHigh = todayGlobexHigh;
+                    yesterdayRTHLow = todayRTHLow;
+                    yesterdayRTHHigh = todayRTHHigh;
                     todayGlobexLow = Low[0];
-                }
-            }
+                    todayGlobexHigh = High[0];
+                 }
 
-            if (isRTH(ToTime(Time[0])))
-            {
-                if (High[0] > todayRTHHigh)
+                else if (ToTime(Time[0]) == rthStartTime)
                 {
-                    todayRTHHigh = High[0];
-                }
-                else if (Low[0] < todayRTHLow)
-                {
+
                     todayRTHLow = Low[0];
-                }
-            }
-
-
-            if (isIB(ToTime(Time[0])))
-            {
-                if (High[0] > IBHigh)
-                {
+                    todayRTHHigh = High[0];
+                    IBLow = Low[0];
                     IBHigh = High[0];
                 }
-                else if (Low[0] < IBLow)
+
+                if (isGlobex(ToTime(Time[0])))
                 {
-                    IBLow = Low[0];
+                    if (High[0] > todayGlobexHigh)
+                    {
+                        todayGlobexHigh = High[0];
+                    }
+                    else if (Low[0] < todayGlobexLow)
+                    {
+                        todayGlobexLow = Low[0];
+                    }
                 }
-            }
+
+                if (isRTH(ToTime(Time[0])))
+                {
+                    if (High[0] > todayRTHHigh)
+                    {
+                        todayRTHHigh = High[0];
+                    }
+                    else if (Low[0] < todayRTHLow)
+                    {
+                        todayRTHLow = Low[0];
+                    }
+                }
 
 
-            Draw.TextFixed(this, "NinjaScriptInfo",
-            "Today Globex High: " + todayGlobexHigh.ToString() + "\nToday Globex Low: " + todayGlobexLow.ToString()
-            + "\nIB High: " + IBHigh.ToString() + "\nIB Low: " + IBLow.ToString()
-            + "\nToday RTH High: " + todayRTHHigh.ToString() + "\nToday RTH Low: " + todayRTHLow.ToString()
-            + "\n ~~~~~~~~~~"
-            + "\nYestertday Globex High: " + yesterdayGlobexHigh.ToString() + "\nTodayGlobex Low: " + yesterdayGlobexLow.ToString()
-            + "\nYesterday RTH High: " + yesterdayRTHHigh.ToString() + "\nYesterday RTH Low: " + yesterdayRTHLow.ToString()
-
-            ,
-            TextPosition.TopLeft,
-            ChartControl.Properties.ChartText,
-            ChartControl.Properties.LabelFont,
-            Brushes.Gray, background, 100);
+                if (isIB(ToTime(Time[0])))
+                {
+                    if (High[0] > IBHigh)
+                    {
+                        IBHigh = High[0];
+                    }
+                    else if (Low[0] < IBLow)
+                    {
+                        IBLow = Low[0];
+                    }
+                }
 
 
+                Draw.TextFixed(this, "NinjaScriptInfo",
+                "Today Globex High: " + todayGlobexHigh.ToString() + "\nToday Globex Low: " + todayGlobexLow.ToString()
+                + "\nIB High: " + IBHigh.ToString() + "\nIB Low: " + IBLow.ToString()
+                + "\nToday RTH High: " + todayRTHHigh.ToString() + "\nToday RTH Low: " + todayRTHLow.ToString()
+                + "\n ~~~~~~~~~~"
+                + "\nYestertday Globex High: " + yesterdayGlobexHigh.ToString() + "\nTodayGlobex Low: " + yesterdayGlobexLow.ToString()
+                + "\nYesterday RTH High: " + yesterdayRTHHigh.ToString() + "\nYesterday RTH Low: " + yesterdayRTHLow.ToString()
+
+                ,
+                TextPosition.TopLeft,
+                ChartControl.Properties.ChartText,
+                ChartControl.Properties.LabelFont,
+                Brushes.Gray, background, 100);
 
 
-            Values[0][0] = todayGlobexHigh;
-            Values[1][0] = todayGlobexLow;
+                Values[0][0] = todayGlobexHigh;
+                Values[1][0] = todayGlobexLow;
 
-            if (yesterdayGlobexHigh != 0 && yesterdayGlobexLow !=0)
-             {
-                    Values[2][0] = yesterdayGlobexHigh;
-                    Values[3][0] = yesterdayGlobexLow;
-             }
+                if (yesterdayGlobexHigh != 0 && yesterdayGlobexLow !=0)
+                 {
+                        Values[2][0] = yesterdayGlobexHigh;
+                        Values[3][0] = yesterdayGlobexLow;
+                 }
 
 
-            if (yesterdayRTHHigh != 0 && yesterdayRTHLow != 0)
-             {
-                    Values[6][0] = yesterdayRTHHigh;
-                    Values[7][0] = yesterdayRTHLow;
-             }
+                if (yesterdayRTHHigh != 0 && yesterdayRTHLow != 0)
+                 {
+                        Values[6][0] = yesterdayRTHHigh;
+                        Values[7][0] = yesterdayRTHLow;
+                 }
+
                 if (thisWeekHigh!= 0 && thisWeekLow !=0)
-                {
-                    Values[12][0] = thisWeekHigh;
-                    Values[13][0] = thisWeekLow;
+                  {
+                        Values[12][0] = thisWeekHigh;
+                        Values[13][0] = thisWeekLow;
+                   }
+
+
+                if (CurrentBars[5] > 1 && lastWeekHigh!= 0 && lastWeekLow != 0 )
+                    {
+                      Values[10][0] = lastWeekHigh;
+                      Values[11][0] = lastWeekLow;
                 }
 
-
-            if (CurrentBars[2] > 1 && lastWeekHigh!= 0 && lastWeekLow != 0 )
+                if (ToTime(Time[0]) >= rthStartTime && ToTime(Time[0]) <= 235900) //time >= rthStartTime && time <= rthEndTime
                 {
-                  Values[10][0] = lastWeekHigh;
-                  Values[11][0] = lastWeekLow;
+                    Values[4][0] = todayRTHHigh;
+                    Values[5][0] = todayRTHLow;
+                    Values[8][0] = IBHigh;
+                    Values[9][0] = IBLow;
+                }
+            }
+            if (BarsInProgress == 5 && CurrentBars[5]>=1) //16
+            {
+                lastWeekHigh = Highs[5][0];
+                lastWeekLow  = Lows[5][0];
+                thisWeekHigh = Closes[5][0];
+                thisWeekLow = Closes[5][0];
             }
 
-            if (ToTime(Time[0]) >= rthStartTime && ToTime(Time[0]) <= 235900) //time >= rthStartTime && time <= rthEndTime
-            {
-                Values[4][0] = todayRTHHigh;
-                Values[5][0] = todayRTHLow;
-                Values[8][0] = IBHigh;
-                Values[9][0] = IBLow;
-            }
+
         }
-            if (BarsInProgress == 2 && CurrentBars[2]>=1) //16
-            {
-                lastWeekHigh = Highs[2][0];
-                lastWeekLow  = Lows[2][0];
-                thisWeekHigh = Closes[2][0];
-                thisWeekLow = Closes[2][0];
-            }
-
-
-            }
 
         private bool isGlobex(int time)
         {
@@ -385,19 +390,19 @@ namespace NinjaTrader.NinjaScript.Indicators
 {
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
-		private Levels[] cacheLevels;
-		public Levels Levels()
+		private Levels4Apollo[] cacheLevels4Apollo;
+		public Levels4Apollo Levels4Apollo()
 		{
-			return Levels(Input);
+			return Levels4Apollo(Input);
 		}
 
-		public Levels Levels(ISeries<double> input)
+		public Levels4Apollo Levels4Apollo(ISeries<double> input)
 		{
-			if (cacheLevels != null)
-				for (int idx = 0; idx < cacheLevels.Length; idx++)
-					if (cacheLevels[idx] != null &&  cacheLevels[idx].EqualsInput(input))
-						return cacheLevels[idx];
-			return CacheIndicator<Levels>(new Levels(), input, ref cacheLevels);
+			if (cacheLevels4Apollo != null)
+				for (int idx = 0; idx < cacheLevels4Apollo.Length; idx++)
+					if (cacheLevels4Apollo[idx] != null &&  cacheLevels4Apollo[idx].EqualsInput(input))
+						return cacheLevels4Apollo[idx];
+			return CacheIndicator<Levels4Apollo>(new Levels4Apollo(), input, ref cacheLevels4Apollo);
 		}
 	}
 }
@@ -406,14 +411,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.Levels Levels()
+		public Indicators.Levels4Apollo Levels4Apollo()
 		{
-			return indicator.Levels(Input);
+			return indicator.Levels4Apollo(Input);
 		}
 
-		public Indicators.Levels Levels(ISeries<double> input )
+		public Indicators.Levels4Apollo Levels4Apollo(ISeries<double> input )
 		{
-			return indicator.Levels(input);
+			return indicator.Levels4Apollo(input);
 		}
 	}
 }
@@ -422,14 +427,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.Levels Levels()
+		public Indicators.Levels4Apollo Levels4Apollo()
 		{
-			return indicator.Levels(Input);
+			return indicator.Levels4Apollo(Input);
 		}
 
-		public Indicators.Levels Levels(ISeries<double> input )
+		public Indicators.Levels4Apollo Levels4Apollo(ISeries<double> input )
 		{
-			return indicator.Levels(input);
+			return indicator.Levels4Apollo(input);
 		}
 	}
 }
