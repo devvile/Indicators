@@ -46,6 +46,9 @@ namespace NinjaTrader.NinjaScript.Indicators
         double IBLow = 0;
         double IBHigh = 0;
         int IbEndTime = 163000;
+        int _barsRequiredToPlot;
+        int i = 1;
+        private Series<double> diffSeries;
 
         protected override void OnStateChange()
         {
@@ -65,7 +68,7 @@ namespace NinjaTrader.NinjaScript.Indicators
                 //See Help Guide for additional information.
                 IsSuspendedWhileInactive = true;
                 BarsRequiredToPlot = 20;
-
+                _barsRequiredToPlot = 20;
 
                 AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexHigh");     
                 AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Line, "globexLow");     
@@ -89,21 +92,29 @@ namespace NinjaTrader.NinjaScript.Indicators
             else if (State == State.Configure)
             {
                 background = Brushes.DarkSlateGray;
-                AddDataSeries(BarsPeriodType.Minute, 1);
-                AddDataSeries(BarsPeriodType.Week, 1);
+
+
             }else if(State == State.DataLoaded)
             {
+                diffSeries = new Series<double>(this);
                 ClearOutputWindow();
             }
         }
         protected override void OnBarUpdate()
         {
 
-            if (CurrentBars[0] < BarsRequiredToPlot || CurrentBars[1] < BarsRequiredToPlot)
+            if (CurrentBar <= BarsRequiredToPlotVal + 1200)
                 return;
 
-            if (Bars.IsFirstBarOfSession && BarsInProgress == 1)
+            if (CurrentBar == 0)
             {
+                Value[0] = Input[0];
+            }
+
+
+            if (Bars.IsFirstBarOfSession)
+            {
+                Print("1 miute bars");
                 if (thisWeekHigh == 0)
                 {
                     thisWeekHigh = High[0];
@@ -115,9 +126,8 @@ namespace NinjaTrader.NinjaScript.Indicators
 
             }
 
-            if (BarsInProgress == 1)
-            {
 
+                /*
                 if (High[0]> thisWeekHigh)
                 {
                     thisWeekHigh = High[0];
@@ -127,16 +137,16 @@ namespace NinjaTrader.NinjaScript.Indicators
                 {
                     thisWeekLow = Low[0];
                 };
-
-                if (ToTime(Time[0]) == globexStartTime)
-            {
+                */
+             if (ToTime(Time[0]) == globexStartTime)
+                  {
                 yesterdayGlobexLow = todayGlobexLow;
                 yesterdayGlobexHigh = todayGlobexHigh;
                 yesterdayRTHLow = todayRTHLow;
                 yesterdayRTHHigh = todayRTHHigh;
                 todayGlobexLow = Low[0];
                 todayGlobexHigh = High[0];
-            }
+             }
 
             else if (ToTime(Time[0]) == rthStartTime)
             {
@@ -205,6 +215,8 @@ namespace NinjaTrader.NinjaScript.Indicators
             Values[0][0] = todayGlobexHigh;
             Values[1][0] = todayGlobexLow;
 
+            /*
+
             if (yesterdayGlobexHigh != 0 && yesterdayGlobexLow !=0)
              {
                     Values[2][0] = yesterdayGlobexHigh;
@@ -223,7 +235,7 @@ namespace NinjaTrader.NinjaScript.Indicators
                     Values[13][0] = thisWeekLow;
                 }
 
-
+                /*
             if (CurrentBars[2] > 1 && lastWeekHigh!= 0 && lastWeekLow != 0 )
                 {
                   Values[10][0] = lastWeekHigh;
@@ -237,14 +249,15 @@ namespace NinjaTrader.NinjaScript.Indicators
                 Values[8][0] = IBHigh;
                 Values[9][0] = IBLow;
             }
-        }
+        
+            /*
             if (BarsInProgress == 2 && CurrentBars[2]>=1) //16
             {
                 lastWeekHigh = Highs[2][0];
                 lastWeekLow  = Lows[2][0];
                 thisWeekHigh = Closes[2][0];
                 thisWeekLow = Closes[2][0];
-            }
+            }*/
 
 
             }
@@ -327,6 +340,7 @@ namespace NinjaTrader.NinjaScript.Indicators
             get { return Values[1]; }
         }
 
+        /*
         [Browsable(false)]
         public Series<double> yesterdayGlobexHighs
         {
@@ -374,6 +388,15 @@ namespace NinjaTrader.NinjaScript.Indicators
         {
             get { return Values[9]; }
         }
+        */
+        [Browsable(false)]
+        [Range(1, 125), NinjaScriptProperty]
+        [Display(Name = "BarsToPlotNinjascript", GroupName = "Position Management", Order = 0)]
+        public int BarsRequiredToPlotVal
+        {
+            get { return _barsRequiredToPlot; }
+            set { _barsRequiredToPlot = value; }
+        }
 
         #endregion
     }
@@ -386,18 +409,18 @@ namespace NinjaTrader.NinjaScript.Indicators
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
 		private LevelsSingleFrame[] cacheLevelsSingleFrame;
-		public LevelsSingleFrame LevelsSingleFrame()
+		public LevelsSingleFrame LevelsSingleFrame(int barsRequiredToPlotVal)
 		{
-			return LevelsSingleFrame(Input);
+			return LevelsSingleFrame(Input, barsRequiredToPlotVal);
 		}
 
-		public LevelsSingleFrame LevelsSingleFrame(ISeries<double> input)
+		public LevelsSingleFrame LevelsSingleFrame(ISeries<double> input, int barsRequiredToPlotVal)
 		{
 			if (cacheLevelsSingleFrame != null)
 				for (int idx = 0; idx < cacheLevelsSingleFrame.Length; idx++)
-					if (cacheLevelsSingleFrame[idx] != null &&  cacheLevelsSingleFrame[idx].EqualsInput(input))
+					if (cacheLevelsSingleFrame[idx] != null && cacheLevelsSingleFrame[idx].BarsRequiredToPlotVal == barsRequiredToPlotVal && cacheLevelsSingleFrame[idx].EqualsInput(input))
 						return cacheLevelsSingleFrame[idx];
-			return CacheIndicator<LevelsSingleFrame>(new LevelsSingleFrame(), input, ref cacheLevelsSingleFrame);
+			return CacheIndicator<LevelsSingleFrame>(new LevelsSingleFrame(){ BarsRequiredToPlotVal = barsRequiredToPlotVal }, input, ref cacheLevelsSingleFrame);
 		}
 	}
 }
@@ -406,14 +429,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.LevelsSingleFrame LevelsSingleFrame()
+		public Indicators.LevelsSingleFrame LevelsSingleFrame(int barsRequiredToPlotVal)
 		{
-			return indicator.LevelsSingleFrame(Input);
+			return indicator.LevelsSingleFrame(Input, barsRequiredToPlotVal);
 		}
 
-		public Indicators.LevelsSingleFrame LevelsSingleFrame(ISeries<double> input )
+		public Indicators.LevelsSingleFrame LevelsSingleFrame(ISeries<double> input , int barsRequiredToPlotVal)
 		{
-			return indicator.LevelsSingleFrame(input);
+			return indicator.LevelsSingleFrame(input, barsRequiredToPlotVal);
 		}
 	}
 }
@@ -422,14 +445,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.LevelsSingleFrame LevelsSingleFrame()
+		public Indicators.LevelsSingleFrame LevelsSingleFrame(int barsRequiredToPlotVal)
 		{
-			return indicator.LevelsSingleFrame(Input);
+			return indicator.LevelsSingleFrame(Input, barsRequiredToPlotVal);
 		}
 
-		public Indicators.LevelsSingleFrame LevelsSingleFrame(ISeries<double> input )
+		public Indicators.LevelsSingleFrame LevelsSingleFrame(ISeries<double> input , int barsRequiredToPlotVal)
 		{
-			return indicator.LevelsSingleFrame(input);
+			return indicator.LevelsSingleFrame(input, barsRequiredToPlotVal);
 		}
 	}
 }

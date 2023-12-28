@@ -89,6 +89,8 @@ namespace NinjaTrader.NinjaScript.Indicators
             else if (State == State.Configure)
             {
                 background = Brushes.DarkSlateGray;
+
+
                 AddDataSeries(BarsPeriodType.Minute, 1);
                 AddDataSeries(BarsPeriodType.Week, 1);
             }else if(State == State.DataLoaded)
@@ -102,28 +104,24 @@ namespace NinjaTrader.NinjaScript.Indicators
             if (CurrentBars[0] < BarsRequiredToPlot || CurrentBars[1] < BarsRequiredToPlot)
                 return;
 
-            if (Bars.IsFirstBarOfSession && BarsInProgress == 1)
+
+
+            if (BarsInProgress == 1)
             {
                 if (thisWeekHigh == 0)
                 {
                     thisWeekHigh = High[0];
                 }
-                if (thisWeekLow == 0)
-                {
-                    thisWeekLow = Low[0];
-                }
-
-            }
-
-            if (BarsInProgress == 1)
-            {
-
-                if (High[0]> thisWeekHigh)
+                else if (High[0]> thisWeekHigh)
                 {
                     thisWeekHigh = High[0];
                 };
 
                 if (Low[0] < thisWeekLow)
+                {
+                    thisWeekLow = Low[0];
+                }
+                else if (thisWeekLow == 0)
                 {
                     thisWeekLow = Low[0];
                 };
@@ -242,8 +240,8 @@ namespace NinjaTrader.NinjaScript.Indicators
             {
                 lastWeekHigh = Highs[2][0];
                 lastWeekLow  = Lows[2][0];
-                thisWeekHigh = Closes[2][0];
-                thisWeekLow = Closes[2][0];
+                thisWeekHigh = Highs[2][0];
+                thisWeekLow = Lows[2][0];
             }
 
 
