@@ -1,10 +1,8 @@
-#region Using declarations
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -19,95 +17,56 @@ using NinjaTrader.Data;
 using NinjaTrader.NinjaScript;
 using NinjaTrader.Core.FloatingPoint;
 using NinjaTrader.NinjaScript.DrawingTools;
-#endregion
 
-//This namespace holds Indicators in this folder and is required. Do not change it. 
+// Declare your indicator class
 namespace NinjaTrader.NinjaScript.Indicators
 {
-	public class RelativeVolumeNT8 : Indicator
-	{
-		private double av;
-		private double sd;
-		private double relVol;
-		
-		protected override void OnStateChange()
-		{
-			if (State == State.SetDefaults)
-			{
-				Description									= @"Melvin E. Dickover : 'Evidence-Based Support & Resistance' - TASC April 2014";
-				Name										= "RelativeVolumeNT8";
-				Calculate									= Calculate.OnBarClose;
-				IsOverlay									= false;
-				DisplayInDataBox							= true;
-				DrawOnPricePanel							= true;
-				DrawHorizontalGridLines						= true;
-				DrawVerticalGridLines						= true;
-				PaintPriceMarkers							= true;
-				ScaleJustification							= NinjaTrader.Gui.Chart.ScaleJustification.Right;
-				//Disable this property if your indicator requires custom values that cumulate with each new market data event. 
-				//See Help Guide for additional information.
-				IsSuspendedWhileInactive					= true;
-				Period					= 60;
-				NumStDev					= 2;
-				AddPlot(new Stroke(Brushes.Blue, 2), PlotStyle.Bar, "RelativeVolume");
-			}
-		}
+    public class RVOL : Indicator
+    {
+        private Series<double> meanVolume;
+        private int period = 22;
 
-		protected override void OnBarUpdate()
-		{
-			if (CurrentBar == 0)
-			{
-				Values[0][0] = 0;
-				PlotBrushes[0][0] = Brushes.Blue;
-			}
-			
-			if (CurrentBar > Period)
-			{
-				av = SMA(Volume, Period)[0];
-				sd = StdDev(Volume, Period)[0];
-				relVol = ((Volume[0] - av) / sd);
-					
-				if (relVol > NumStDev)
-				{
-					Values[0][0] = relVol;
-					PlotBrushes[0][0] = Brushes.Blue;
-				}
-			
-				else if (relVol <= 0)
-				{
-					Values[0][0] = 0;
-				}
-						
-				else
-				{
-					Values[0][0] = relVol;
-					PlotBrushes[0][0] = Brushes.DarkGray;
-				}
-			}
-		}
+        protected override void OnStateChange()
+        {
+            if (State == State.SetDefaults)
+            {
+                Description = @"Relative Volume Indicator - compares current volume to the average volume of the same time period over 22 days.";
+                Name = "RVOL";
+                Calculate = Calculate.OnEachTick; // or Calculate.OnBarClose;
+                IsOverlay = false;
+                AddPlot(Brushes.Orange, "RVOL");
+            }
+            else if (State == State.DataLoaded)
+            {
+                // Initialize mean volume series
+                meanVolume = new Series<double>(this);
+            }
+        }
 
-		#region Properties
-		[NinjaScriptProperty]
-		[Range(1, int.MaxValue)]
-		[Display(Name="Period", Description="Number of bars for StDev calculation", Order=1, GroupName="Parameters")]
-		public int Period
-		{ get; set; }
+        protected override void OnBarUpdate()
+        {
+            // Ensure we have enough data
+            if (CurrentBar < period)
+                return;
 
-		[NinjaScriptProperty]
-		[Range(1, double.MaxValue)]
-		[Display(Name="NumStDev", Description="Num of StDevs to be significant", Order=2, GroupName="Parameters")]
-		public double NumStDev
-		{ get; set; }
+            // Calculate mean volume for the same bar over the past 22 days
+            double totalVolume = 0;
+            var today = Time[0];
+            var dateTime = new DateTime(today.Year, today.Month, today.Day, 9, 30, 0);
+            for (int i = 0; i < period; i++)
+            {
+                int barsAgo = Bars.GetBar(new DateTime(today.Year, today.Month, today.Day - i, 9, 30, 0));
+                Print(i);
+                Print(Close[barsAgo]);
+				
+            }
+            meanVolume[0] = totalVolume / period;
 
-		[Browsable(false)]
-		[XmlIgnore]
-		public Series<double> RelativeVolume
-		{
-			get { return Values[0]; }
-		}
-		#endregion
-
-	}
+            // Calculate RVOL
+            double rvol = Volume[0] / meanVolume[0];
+            Values[0][0] = rvol;
+        }
+    }
 }
 
 #region NinjaScript generated code. Neither change nor remove.
@@ -116,19 +75,19 @@ namespace NinjaTrader.NinjaScript.Indicators
 {
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
-		private RelativeVolumeNT8[] cacheRelativeVolumeNT8;
-		public RelativeVolumeNT8 RelativeVolumeNT8(int period, double numStDev)
+		private RVOL[] cacheRVOL;
+		public RVOL RVOL()
 		{
-			return RelativeVolumeNT8(Input, period, numStDev);
+			return RVOL(Input);
 		}
 
-		public RelativeVolumeNT8 RelativeVolumeNT8(ISeries<double> input, int period, double numStDev)
+		public RVOL RVOL(ISeries<double> input)
 		{
-			if (cacheRelativeVolumeNT8 != null)
-				for (int idx = 0; idx < cacheRelativeVolumeNT8.Length; idx++)
-					if (cacheRelativeVolumeNT8[idx] != null && cacheRelativeVolumeNT8[idx].Period == period && cacheRelativeVolumeNT8[idx].NumStDev == numStDev && cacheRelativeVolumeNT8[idx].EqualsInput(input))
-						return cacheRelativeVolumeNT8[idx];
-			return CacheIndicator<RelativeVolumeNT8>(new RelativeVolumeNT8(){ Period = period, NumStDev = numStDev }, input, ref cacheRelativeVolumeNT8);
+			if (cacheRVOL != null)
+				for (int idx = 0; idx < cacheRVOL.Length; idx++)
+					if (cacheRVOL[idx] != null &&  cacheRVOL[idx].EqualsInput(input))
+						return cacheRVOL[idx];
+			return CacheIndicator<RVOL>(new RVOL(), input, ref cacheRVOL);
 		}
 	}
 }
@@ -137,14 +96,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.RelativeVolumeNT8 RelativeVolumeNT8(int period, double numStDev)
+		public Indicators.RVOL RVOL()
 		{
-			return indicator.RelativeVolumeNT8(Input, period, numStDev);
+			return indicator.RVOL(Input);
 		}
 
-		public Indicators.RelativeVolumeNT8 RelativeVolumeNT8(ISeries<double> input , int period, double numStDev)
+		public Indicators.RVOL RVOL(ISeries<double> input )
 		{
-			return indicator.RelativeVolumeNT8(input, period, numStDev);
+			return indicator.RVOL(input);
 		}
 	}
 }
@@ -153,14 +112,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.RelativeVolumeNT8 RelativeVolumeNT8(int period, double numStDev)
+		public Indicators.RVOL RVOL()
 		{
-			return indicator.RelativeVolumeNT8(Input, period, numStDev);
+			return indicator.RVOL(Input);
 		}
 
-		public Indicators.RelativeVolumeNT8 RelativeVolumeNT8(ISeries<double> input , int period, double numStDev)
+		public Indicators.RVOL RVOL(ISeries<double> input )
 		{
-			return indicator.RelativeVolumeNT8(input, period, numStDev);
+			return indicator.RVOL(input);
 		}
 	}
 }
